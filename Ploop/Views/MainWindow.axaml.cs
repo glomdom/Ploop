@@ -24,8 +24,8 @@ using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Ploop.ViewModels;
 using ReactiveUI;
+using Ploop.ViewModels;
 
 namespace Ploop.Views {
     public partial class MainWindow : Window {
@@ -48,10 +48,8 @@ namespace Ploop.Views {
 
         private void SetupNodes() {
             var canvas = this.FindControl<Canvas>("Workspace");
-            var viewModel = DataContext as MainWindowViewModel;
 
-            if (viewModel == null || canvas == null)
-                return;
+            if (DataContext is not MainWindowViewModel viewModel || canvas == null) return;
 
             foreach (var node in viewModel.Nodes) {
                 var border = CreateNodeElement(node);
@@ -75,7 +73,9 @@ namespace Ploop.Views {
                     Foreground = Brushes.White,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center
-                }
+                },
+
+                Tag = node
             };
 
             var portsGrid = new Grid {
@@ -84,9 +84,9 @@ namespace Ploop.Views {
                 VerticalAlignment = VerticalAlignment.Stretch
             };
 
-            int totalPorts = Math.Max(node.InputPorts.Count, node.OutputPorts.Count);
+            var totalPorts = Math.Max(node.InputPorts.Count, node.OutputPorts.Count);
 
-            for (int i = 0; i < totalPorts; i++) {
+            for (var i = 0; i < totalPorts; i++) {
                 if (i < node.InputPorts.Count) {
                     var inputPort = CreatePort(node.InputPorts[i]);
                     portsGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
@@ -100,7 +100,7 @@ namespace Ploop.Views {
                     var outputPort = CreatePort(node.OutputPorts[i]);
                     portsGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
                     portsGrid.Children.Add(outputPort);
-                    
+
                     Grid.SetRow(outputPort, i);
                     Grid.SetColumn(outputPort, 2);
                 }
@@ -134,11 +134,14 @@ namespace Ploop.Views {
                 Child = container
             };
 
+            border.PointerEntered += (_, _) => border.BorderBrush = node.IsSelected ? Brushes.DodgerBlue : Brushes.Yellow;
+            border.PointerExited += (_, _) => border.BorderBrush = node.IsSelected ? Brushes.DodgerBlue : Brushes.Gray;
+
             return border;
         }
 
-        private Border CreatePort(string label) {
-            return new Border {
+        private Border CreatePort(PortViewModel port) {
+            var portBorder = new Border {
                 Background = Brushes.Gray,
                 CornerRadius = new CornerRadius(12),
                 Width = 24,
@@ -147,21 +150,26 @@ namespace Ploop.Views {
                 HorizontalAlignment = HorizontalAlignment.Left,
                 VerticalAlignment = VerticalAlignment.Center,
                 Child = new TextBlock {
-                    Text = label,
+                    Text = port.Name,
                     Foreground = Brushes.White,
                     FontSize = 12,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center
-                }
+                },
+
+                Tag = port
             };
+
+            portBorder.PointerEntered += (_, _) => portBorder.Background = Brushes.DarkGray;
+            portBorder.PointerExited += (_, _) => portBorder.Background = Brushes.Gray;
+
+            return portBorder;
         }
 
         private void SetupConnections() {
             var canvas = this.FindControl<Canvas>("Workspace");
-            var viewModel = DataContext as MainWindowViewModel;
 
-            if (viewModel == null || canvas == null)
-                return;
+            if (DataContext is not MainWindowViewModel viewModel || canvas == null) return;
 
             foreach (var connection in viewModel.Connections) {
                 var line = new Line {
@@ -186,20 +194,39 @@ namespace Ploop.Views {
             if (canvas == null) return;
 
             var position = e.GetPosition(canvas);
-            _draggedNode = null;
+            var clickedOnNode = false;
+
+            var viewModel = DataContext as MainWindowViewModel;
+            if (viewModel == null) return;
+
+            foreach (var element in canvas.Children) {
+                if (element is not Border { Tag: NodeViewModel node } border) continue;
+
+                node.IsSelected = false;
+                border.BorderBrush = Brushes.Gray;
+            }
 
             foreach (var element in canvas.Children) {
                 if (element is not Border { Tag: NodeViewModel node } border) continue;
 
                 var nodePosition = new Point(Canvas.GetLeft(border), Canvas.GetTop(border));
+                var nodeRect = new Rect(nodePosition, border.Bounds.Size);
 
-                if (position.X >= nodePosition.X && position.X <= nodePosition.X + border.Bounds.Width &&
-                    position.Y >= nodePosition.Y && position.Y <= nodePosition.Y + border.Bounds.Height) {
-                    _draggedNode = node;
-                    _offsetX = position.X - nodePosition.X;
-                    _offsetY = position.Y - nodePosition.Y;
-                    break;
-                }
+                if (!nodeRect.Contains(position)) continue;
+
+                clickedOnNode = true;
+                node.IsSelected = true;
+                border.BorderBrush = Brushes.DodgerBlue;
+
+                _draggedNode = node;
+                _offsetX = position.X - nodePosition.X;
+                _offsetY = position.Y - nodePosition.Y;
+
+                break;
+            }
+
+            if (!clickedOnNode) {
+                _draggedNode = null;
             }
         }
 
@@ -217,10 +244,10 @@ namespace Ploop.Views {
             _draggedNode.Y = newY;
 
             foreach (var element in canvas.Children) {
-                if (element is Border border && border.Tag == _draggedNode) {
-                    Canvas.SetLeft(border, newX);
-                    Canvas.SetTop(border, newY);
-                }
+                if (element is not Border border || border.Tag != _draggedNode) continue;
+
+                Canvas.SetLeft(border, newX);
+                Canvas.SetTop(border, newY);
             }
         }
 
