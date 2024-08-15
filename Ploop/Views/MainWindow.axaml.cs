@@ -1,3 +1,22 @@
+/*
+
+Copyright (C) 2024 glomdom
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
 using System;
 using Avalonia;
 using Avalonia.Controls;
@@ -18,15 +37,12 @@ namespace Ploop.Views {
             InitializeComponent();
             DataContext = new MainWindowViewModel();
 
-            // Initialize nodes from the ViewModel
             SetupNodes();
 
-            // Setup event handlers for interactions
             PointerPressed += OnPointerPressed;
             PointerMoved += OnPointerMoved;
             PointerReleased += OnPointerReleased;
 
-            // Initialize connections from the ViewModel
             SetupConnections();
         }
 
@@ -38,26 +54,22 @@ namespace Ploop.Views {
                 return;
 
             foreach (var node in viewModel.Nodes) {
-                // Create the UI element for each node
                 var border = CreateNodeElement(node);
 
-                // Set the position on the canvas
                 Canvas.SetLeft(border, node.X);
                 Canvas.SetTop(border, node.Y);
 
-                // Add the border to the canvas
                 canvas.Children.Add(border);
             }
         }
 
         private Border CreateNodeElement(NodeViewModel node) {
-            // Create the header
             var header = new Border {
                 Background = new SolidColorBrush(Color.Parse("#2C3E50")),
                 Height = 30,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 VerticalAlignment = VerticalAlignment.Top,
-                CornerRadius = new CornerRadius(8, 8, 0, 0), // Rounded corners at the top
+                CornerRadius = new CornerRadius(8, 8, 0, 0),
                 Child = new TextBlock {
                     Text = node.Name,
                     Foreground = Brushes.White,
@@ -66,7 +78,6 @@ namespace Ploop.Views {
                 }
             };
 
-            // Create the ports area with both input and output ports
             var portsGrid = new Grid {
                 ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"),
                 HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -75,12 +86,12 @@ namespace Ploop.Views {
 
             int totalPorts = Math.Max(node.InputPorts.Count, node.OutputPorts.Count);
 
-            // Add ports to the grid
             for (int i = 0; i < totalPorts; i++) {
                 if (i < node.InputPorts.Count) {
                     var inputPort = CreatePort(node.InputPorts[i]);
                     portsGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
                     portsGrid.Children.Add(inputPort);
+
                     Grid.SetRow(inputPort, i);
                     Grid.SetColumn(inputPort, 0);
                 }
@@ -89,22 +100,21 @@ namespace Ploop.Views {
                     var outputPort = CreatePort(node.OutputPorts[i]);
                     portsGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
                     portsGrid.Children.Add(outputPort);
+                    
                     Grid.SetRow(outputPort, i);
                     Grid.SetColumn(outputPort, 2);
                 }
             }
 
-            // Create the main content area
             var content = new Border {
                 Background = new SolidColorBrush(Color.Parse("#34495E")),
                 Padding = new Thickness(10),
                 VerticalAlignment = VerticalAlignment.Stretch,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
-                CornerRadius = new CornerRadius(0, 0, 8, 8), // Rounded corners at the bottom
+                CornerRadius = new CornerRadius(0, 0, 8, 8),
                 Child = portsGrid
             };
 
-            // Wrap the header and content in a container
             var container = new StackPanel {
                 Orientation = Orientation.Vertical,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -115,7 +125,6 @@ namespace Ploop.Views {
                 }
             };
 
-            // Create the outer border that encompasses everything
             var border = new Border {
                 Background = Brushes.Transparent,
                 BorderBrush = Brushes.Gray,
@@ -162,7 +171,6 @@ namespace Ploop.Views {
                     EndPoint = connection.EndPoint
                 };
 
-                // Subscribe to node movement to update the connection
                 connection.WhenAnyValue(c => c.StartPoint, c => c.EndPoint)
                     .Subscribe(_ => {
                         line.StartPoint = connection.StartPoint;
@@ -208,7 +216,6 @@ namespace Ploop.Views {
             _draggedNode.X = newX;
             _draggedNode.Y = newY;
 
-            // Update the corresponding UI element
             foreach (var element in canvas.Children) {
                 if (element is Border border && border.Tag == _draggedNode) {
                     Canvas.SetLeft(border, newX);
