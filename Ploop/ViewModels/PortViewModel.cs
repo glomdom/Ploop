@@ -17,21 +17,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using ReactiveUI;
 
 namespace Ploop.ViewModels;
 
-public class NodeViewModel : ViewModelBase {
+public class PortViewModel : ViewModelBase {
+    public enum PortType {
+        Input,
+        Output
+    }
+
     private string _name;
     private bool _isHovered;
     private bool _isSelected;
-    private double _x;
-    private double _y;
-
-    public ObservableCollection<PortViewModel> InputPorts { get; set; }
-    public ObservableCollection<PortViewModel> OutputPorts { get; set; }
+    private PortType _type;
 
     public string Name {
         get => _name;
@@ -47,25 +46,16 @@ public class NodeViewModel : ViewModelBase {
         get => _isSelected;
         set => this.RaiseAndSetIfChanged(ref _isSelected, value);
     }
-    
-    public double X {
-        get => _x;
-        set => this.RaiseAndSetIfChanged(ref _x, value);
+
+    public PortType Type {
+        get => _type;
+        set => this.RaiseAndSetIfChanged(ref _type, value);
     }
 
-    public double Y {
-        get => _y;
-        set => this.RaiseAndSetIfChanged(ref _y, value);
-    }
-
-    public NodeViewModel(string name, double x, double y, ObservableCollection<PortViewModel> inputPorts, ObservableCollection<PortViewModel> outputPorts) {
+    public PortViewModel(string name, PortType type) {
         _name = name;
+        _type = type;
         _isHovered = false;
         _isSelected = false;
-        _x = x;
-        _y = y;
-
-        InputPorts = inputPorts;
-        OutputPorts = outputPorts;
     }
 }

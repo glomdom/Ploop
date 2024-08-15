@@ -27,15 +27,16 @@ public class MainWindowViewModel : ViewModelBase {
     public ObservableCollection<ConnectionViewModel> Connections { get; } = [];
 
     public MainWindowViewModel() {
-        var testNode = new NodeViewModel(
-            name: "Test Node",
-            x: 100,
-            y: 100
-        );
+        var inputPorts = new ObservableCollection<PortViewModel> {
+            new PortViewModel("I1", PortViewModel.PortType.Input),
+            new PortViewModel("I2", PortViewModel.PortType.Input)
+        };
 
-        testNode.InputPorts.Add("I1");
-        testNode.InputPorts.Add("I2");
-        testNode.OutputPorts.Add("O1");
+        var outputPorts = new ObservableCollection<PortViewModel> {
+            new PortViewModel("O1", PortViewModel.PortType.Output)
+        };
+
+        var testNode = new NodeViewModel(name: "testnode", x: 100, y: 100, inputPorts, outputPorts);
 
         Nodes.Add(testNode);
         
